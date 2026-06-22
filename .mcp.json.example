@@ -1,0 +1,12 @@
+{
+  "_comment": "Copy to .mcp.json and set your server. The Mac's Claude launches the MCP server ON the Hetzner box over SSH and pipes its stdio back — no exposed port, no extra auth, uses your SSH key. For LOCAL use on the box itself, replace command/args with: \"command\": \"/usr/local/bin/meme-expert\", \"args\": [\"mcp\"].",
+  "mcpServers": {
+    "meme-expert": {
+      "command": "ssh",
+      "args": [
+        "meme@YOUR_SERVER_IP",
+        "MEME_SNAPSHOT_PATH=/home/meme/meme-expert/data/snapshot.duckdb /usr/local/bin/meme-expert mcp"
+      ]
+    }
+  }
+}

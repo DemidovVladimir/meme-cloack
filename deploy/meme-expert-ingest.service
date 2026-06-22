@@ -1,0 +1,24 @@
+# meme-expert ingester (Hetzner / Ubuntu). Install:
+#   sudo cp deploy/meme-expert-ingest.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now meme-expert-ingest
+#   journalctl -u meme-expert-ingest -f
+[Unit]
+Description=meme-expert PumpPortal ingester (rolling 24h DuckDB)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=meme
+WorkingDirectory=/home/meme/meme-expert
+EnvironmentFile=/home/meme/meme-expert/.env
+ExecStart=/usr/local/bin/meme-expert ingest
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=meme-expert-ingest
+
+[Install]
+WantedBy=multi-user.target

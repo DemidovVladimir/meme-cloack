@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  macOS launchd job: run the daily meme-expert research on your Mac, on your
+  Claude subscription. Edit the repo path + hour, then:
+
+    cp deploy/com.meme-expert.daily.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.meme-expert.daily.plist
+
+  Runs via a login shell (-lc) so nvm/claude are on PATH. Test now:
+    launchctl kickstart -k gui/$(id -u)/com.meme-expert.daily
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.meme-expert.daily</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>/Users/vladimirdemidov/development/meme_cloack/deploy/run-daily-research.sh</string>
+  </array>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>9</integer>
+    <key>Minute</key><integer>30</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>/Users/vladimirdemidov/development/meme_cloack/logs/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/vladimirdemidov/development/meme_cloack/logs/launchd.err.log</string>
+</dict>
+</plist>

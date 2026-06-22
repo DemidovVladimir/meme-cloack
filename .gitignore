@@ -1,0 +1,9 @@
+/target
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp
+.env
+.mcp.json
+/data
+/logs
+.DS_Store
