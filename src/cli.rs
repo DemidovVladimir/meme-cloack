@@ -17,4 +17,16 @@ pub enum Command {
     Prune,
     /// Print database stats (reads the read-only snapshot).
     Stats,
+    /// Screen recent early-life tokens against the heuristics (reads the snapshot).
+    Screen {
+        /// Look back this many minutes.
+        #[arg(long, default_value_t = 20)]
+        minutes: u32,
+        /// Tier: balanced|gate60|conviction60|gate120|inflow120|sustained.
+        #[arg(long)]
+        tier: Option<String>,
+        /// Max rows.
+        #[arg(long, default_value_t = 30)]
+        limit: u32,
+    },
 }

@@ -7,9 +7,11 @@ You have READ-ONLY access to the last ~24h of Solana memecoin data through the
 epoch-millis (`created_ms`, `ts_ms`) — do all time math in millis, never SQL
 `now()`/intervals.
 
-The dataset is already filtered: only tokens that survived ~40 minutes without
-rugging are tracked to maturity, plus the early trades of tokens that died young
-(your negative examples).
+The dataset is the **complete pump.fun firehose** over the rolling ~24h window
+(Helius LaserStream WebSocket): every token creation and every trade, including
+full rugs — so you have complete positive AND negative examples, no survivor bias.
+The window slides, so each daily run sees a fresh 24h. Your job is to make SKILL.md
+**sharper every run** — confirm, refine, or retire heuristics as the new data dictates.
 
 ## Mission
 
@@ -23,13 +25,16 @@ Form hypotheses, test them with `run_readonly_sql`, keep only what holds up.
 ## Method
 
 1. Call `window_stats` first. If `trades` is 0, STOP and append a Research Log note
-   that the trade stream was unavailable (likely missing API key / wallet balance) —
-   do not invent patterns.
+   that the trade stream was unavailable (Helius key/WS down) — do not invent patterns.
 2. Establish the outcome variable (pumped vs not) from market_cap_sol trajectories.
 3. Iterate: hypothesize a signal → query → measure how well it separates the two
    groups (sample size, precision, lift). Discard weak signals.
 4. Prefer signals computable in a token's FIRST FEW MINUTES (actionable for live
-   detection), using only fields the live ingester captures.
+   detection), using only fields the live ingester captures. Express heuristics as
+   precise conditions over computable features (e.g. distinct early buyers, net SOL
+   inflow, 2nd-minute breadth, top-buyer share, serial-wallet fraction) so the live
+   screening agent can apply them directly. The `screen_candidates` MCP tool already
+   computes that feature set — keep SKILL.md's thresholds expressible over it.
 
 ## Deliverable — update the skill, do not overwrite knowledge
 

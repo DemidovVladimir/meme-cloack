@@ -62,6 +62,16 @@ pub struct SqlArgs {
     pub limit: Option<u32>,
 }
 
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct ScreenArgs {
+    /// Look back this many minutes (default 20).
+    pub minutes: Option<u32>,
+    /// Tier override: balanced (default) | gate60 | conviction60 | gate120 | inflow120 | sustained.
+    pub tier: Option<String>,
+    /// Max rows (default 30).
+    pub limit: Option<u32>,
+}
+
 #[tool_router]
 impl MemeServer {
     pub fn new(pool: ReaderPool) -> Self {
@@ -180,6 +190,19 @@ impl MemeServer {
         let inner = a.sql.trim().trim_end_matches(';').to_string();
         let sql = format!("SELECT * FROM ({inner}) AS q LIMIT {limit}");
         self.blocking_json(move |c| db::query_json(c, &sql, params![])).await
+    }
+
+    #[tool(
+        description = "Screen recent early-life pump.fun tokens against the learned heuristics. \
+        Default tier = balanced/high-conviction (>=20 distinct buyers, >=2 SOL net inflow, no whale >50% in the first 2 min); \
+        kill-filters applied; ranked by net inflow. Only scores tokens whose 120s window has closed within the data horizon \
+        (uses max(ts_ms) as the clock, not wall-clock). Each row carries the features + a `sustained` flag + `reasons`. \
+        Args: minutes (default 20), tier (balanced|gate60|conviction60|gate120|inflow120|sustained|all), limit (default 30). \
+        Use tier=all to get the unfiltered feature rows for EVERY recent token (closed 120s window) and apply the latest SKILL.md patterns yourself — SKILL.md is the source of truth."
+    )]
+    async fn screen_candidates(&self, Parameters(a): Parameters<ScreenArgs>) -> Result<CallToolResult, McpError> {
+        let p = crate::screen::ScreenParams::from_args(a.minutes, a.tier.as_deref(), a.limit);
+        self.blocking_json(move |c| crate::screen::screen(c, &p)).await
     }
 
     async fn blocking_json<F>(&self, f: F) -> Result<CallToolResult, McpError>

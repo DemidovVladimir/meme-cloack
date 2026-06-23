@@ -1,11 +1,14 @@
 mod cli;
 mod config;
 mod db;
+mod helius;
 mod ingest;
 mod mcp;
 mod model;
 mod prune;
+mod pumpfun_decode;
 mod pumpportal;
+mod screen;
 mod stats;
 mod util;
 mod writer;
@@ -34,6 +37,10 @@ async fn main() -> Result<()> {
         cli::Command::Mcp => mcp::run(&config.snapshot_path).await?,
         cli::Command::Prune => prune::run(&config)?,
         cli::Command::Stats => stats::run(&config)?,
+        cli::Command::Screen { minutes, tier, limit } => {
+            let p = screen::ScreenParams::from_args(Some(minutes), tier.as_deref(), Some(limit));
+            screen::run(&config, p)?;
+        }
     }
     Ok(())
 }

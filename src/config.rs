@@ -9,6 +9,16 @@ pub struct Config {
     pub db_path: PathBuf,
     pub snapshot_path: PathBuf,
 
+    // --- ingestion source selection ---
+    pub ingest_source: IngestSource,
+    pub helius_api_key: Option<String>,
+    pub helius_ws_url: String,
+    pub pump_program_id: String,
+    /// If > 0, only persist each token's first N minutes of trades (live-screener
+    /// storage bound). 0 = keep all trades within the retention window (best for
+    /// re-training, which needs full outcomes — peak / lifespan / survival).
+    pub early_trade_window_minutes: f64,
+
     pub retention_hours: f64,
 
     // --- 40-minute survivor / early-rug tracking policy ---
@@ -41,11 +51,43 @@ impl Config {
             _ => base,
         };
 
+        // Helius LaserStream WebSocket: full URL override, else build from key.
+        let helius_api_key = env_opt("HELIUS_API_KEY");
+        let helius_ws_url = match env_opt("HELIUS_WS_URL") {
+            Some(u) => u,
+            None => {
+                let hbase = env_str("HELIUS_WS_BASE", "wss://mainnet.helius-rpc.com");
+                match &helius_api_key {
+                    Some(k) if !k.is_empty() => {
+                        // Ensure a "/" path before the query — Helius returns HTTP 400
+                        // on `host?query` (needs `host/?query`).
+                        let base = if hbase.contains('?') {
+                            hbase
+                        } else {
+                            format!("{}/", hbase.trim_end_matches('/'))
+                        };
+                        let sep = if base.contains('?') { '&' } else { '?' };
+                        format!("{base}{sep}api-key={k}")
+                    }
+                    _ => hbase,
+                }
+            }
+        };
+        let ingest_source = match env_str("INGEST_SOURCE", "pumpportal").to_ascii_lowercase().as_str() {
+            "helius" | "helius_ws" | "heliusws" | "ws" => IngestSource::HeliusWs,
+            _ => IngestSource::PumpPortal,
+        };
+
         Ok(Self {
             pumpportal_api_key: api_key,
             pumpportal_ws_url: ws_url,
             db_path: env_str("MEME_DB_PATH", "./data/hot.duckdb").into(),
             snapshot_path: env_str("MEME_SNAPSHOT_PATH", "./data/snapshot.duckdb").into(),
+            ingest_source,
+            helius_api_key,
+            helius_ws_url,
+            pump_program_id: env_str("PUMP_PROGRAM_ID", "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"),
+            early_trade_window_minutes: env_f64("EARLY_TRADE_WINDOW_MINUTES", 0.0),
             retention_hours: env_f64("RETENTION_HOURS", 24.0),
             survivor_age_minutes: env_f64("SURVIVOR_AGE_MINUTES", 40.0),
             death_drawdown_pct: env_f64("DEATH_DRAWDOWN_PCT", 0.25),
@@ -67,6 +109,25 @@ impl Config {
     pub fn death_silence_ms(&self) -> i64 {
         (self.death_silence_minutes * 60_000.0) as i64
     }
+    /// Some(ms) if a positive early-trade window is configured; None = keep all
+    /// trades within the retention window.
+    pub fn early_trade_window_ms(&self) -> Option<i64> {
+        if self.early_trade_window_minutes > 0.0 {
+            Some((self.early_trade_window_minutes * 60_000.0) as i64)
+        } else {
+            None
+        }
+    }
+}
+
+/// Which live source fills the database.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IngestSource {
+    /// PumpPortal pre-decoded WS (per-token subs, metered) — fallback.
+    PumpPortal,
+    /// Helius LaserStream WebSocket `transactionSubscribe` on the pump.fun program
+    /// (complete firehose, no sub cap) — default for the screener.
+    HeliusWs,
 }
 
 fn env_opt(key: &str) -> Option<String> {
