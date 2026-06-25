@@ -1,6 +1,6 @@
 ---
 name: meme-ops
-description: Operate and inspect the meme-expert Hetzner server. Use when asked to check the ingester's health, how much data is in the DB, disk/memory/CPU usage, recent logs, PumpPortal trade-stream cost, or to start/stop/restart the service. A runbook of SSH commands against the deployment — distinct from the meme-expert skill (which screens tokens via MCP).
+description: Operate and inspect the meme-expert Hetzner server. Use when asked for server "state" — how much memory/disk is left and how many Helius credits are left/burning — or to check service health, how much data is in the DB, disk/memory/CPU, recent logs, or to start/stop/restart a service (ingester or papertrade). A runbook of SSH commands against the deployment — distinct from the meme-expert skill (which screens tokens via MCP).
 allowed-tools: Bash, Read
 ---
 
@@ -19,8 +19,8 @@ plumbing.
 | IP | `178.104.2.95` |
 | SSH key | `~/.ssh/hetzner_meme_ed25519` |
 | Users | `root` (ops/full) · `meme` (service user: runs ingester, owns the data) |
-| Service | systemd `meme-expert-ingest` (enabled; auto-restart + start on boot) |
-| Binary | `/usr/local/bin/meme-expert` (subcommands: `ingest` `mcp` `stats` `prune` `screen`) |
+| Services | `meme-expert-papertrade` (active 2026-06-25+ — paper-trading, the current live Helius consumer) · `meme-expert-ingest` (stopped+disabled 2026-06-25; data capture — re-enable to resume) |
+| Binary | `/usr/local/bin/meme-expert` (subcommands: `ingest` `mcp` `stats` `prune` `screen` `papertrade`) |
 | Data dir | `/home/meme/meme-expert/data/` |
 | DBs | `hot.duckdb` (live, held read-write by ingester) · `snapshot.duckdb` (read-only, refreshed every snapshot interval) · `.wal` is the active write-ahead log |
 | Config | `/home/meme/meme-expert/.env` (root-readable only) |
@@ -48,6 +48,43 @@ echo "== disk ==";       df -h / | awk 'NR==1||/\/$/'
 echo "== mem ==";        free -h | awk '/Mem:|Swap:/'
 EOF
 ```
+
+## State — memory/disk left + Helius credit burn
+
+One-shot for "what's the server state": RAM + disk left, which Helius consumers are live,
+and an *estimate* of credits each burned since (re)start. One full pump.fun firehose ≈
+**467 credits/min ≈ ~6.7%/day** of the 10M Developer plan. The exact remaining-credits figure
+is **not exposed to the RPC api-key** (the admin API needs a separate Bearer admin token —
+probed: the RPC key 401s), so read the dashboard for the real number.
+
+```bash
+ssh -i ~/.ssh/hetzner_meme_ed25519 root@178.104.2.95 'bash -s' <<'EOF'
+echo "== memory =="; free -h | awk '/Mem:|Swap:/'
+echo "== disk =="; df -h / | awk 'NR==1||/\/$/'
+echo "== Helius consumers (each ~467 cr/min ~= 6.7%/day of 10M) =="
+now=$(date +%s)
+for svc in meme-expert-papertrade meme-expert-ingest; do
+  st=$(systemctl is-active "$svc")
+  line="$svc: $st"
+  if [ "$st" = active ]; then
+    start=$(systemctl show "$svc" -p ActiveEnterTimestamp --value)
+    up=$(( now - $(date -d "$start" +%s) ))
+    line="$line  up=$((up/3600))h$(((up%3600)/60))m  est_credits_since_start~=$(( up/60 * 467 ))"
+  fi
+  echo "$line"
+done
+echo "Exact credits remaining: https://dashboard.helius.dev  (Developer plan = 10,000,000/cycle)"
+EOF
+```
+
+`est_credits_since_start` is a rolling-rate estimate per service, **not** the billed cycle
+total (the dashboard counter is cumulative across the whole monthly cycle and resets monthly).
+For exact remaining credits, open the dashboard — or paste a screenshot and I'll read it.
+
+*Optional — exact number via API:* `GET https://admin-api.helius.xyz/v0/usage` with header
+`Authorization: Bearer <ADMIN_TOKEN>` returns billed usage. The RPC api-key is NOT an admin
+token; get one via `helius login` (CLI) or by copying the dashboard's `Authorization` header
+from browser devtools, store it as `HELIUS_ADMIN_TOKEN`, then curl it.
 
 ## Is there data? How much?
 
