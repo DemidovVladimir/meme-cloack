@@ -86,6 +86,36 @@ For exact remaining credits, open the dashboard — or paste a screenshot and I'
 token; get one via `helius login` (CLI) or by copying the dashboard's `Authorization` header
 from browser devtools, store it as `HELIUS_ADMIN_TOKEN`, then curl it.
 
+## Paper-trade results (`paper-stats` — the gate metric)
+
+The paper trader appends every closed trade to `data/paper_trades.jsonl` (append-only, survives
+restarts) — that file is the **durable source of truth**. This summarizes it on demand, independent
+of any cron/session. Net P&L is already after fees+slippage (0.1 SOL/position). The journald
+`summary` line is only a live convenience counter and resets if the service restarts; trust this.
+
+```bash
+ssh -i ~/.ssh/hetzner_meme_ed25519 meme@178.104.2.95 'python3 - /home/meme/meme-expert/data/paper_trades.jsonl' <<'PY'
+import sys, json, statistics
+from collections import Counter
+rows=[json.loads(l) for l in open(sys.argv[1]) if l.strip()]
+n=len(rows)
+if not n: print("no closed trades yet"); sys.exit()
+fr=[r["pnl_frac"] for r in rows]; wins=sum(1 for x in fr if x>0)
+reasons=Counter(r["reason"] for r in rows)
+print(f"closed={n}  win_rate={100*wins/n:.1f}%  total_pnl_sol={sum(r['pnl_sol'] for r in rows):+.4f}")
+print(f"mean/median per trade: {100*statistics.mean(fr):+.2f}% / {100*statistics.median(fr):+.2f}%")
+print(f"avg entry mcap={statistics.mean(r['entry_mcap'] for r in rows):.1f} SOL  avg hold={statistics.mean(r['hold_s'] for r in rows):.0f}s")
+for rsn,c in reasons.most_common():
+    sub=[r["pnl_frac"] for r in rows if r["reason"]==rsn]
+    print(f"  {rsn:12s} n={c:3d} mean {100*statistics.mean(sub):+.1f}%")
+PY
+```
+
+**How SKILL.md gets updated:** `paper_trades.jsonl` is the raw ledger; the meme-expert skill's
+"## Trading Notes" is the *curated* summary. Run `paper-stats` anytime → fold the numbers into
+Trading Notes + commit. (The session-only analysis cron is only a best-effort auto-attempt; the
+ledger + this command are the reliable path, so nothing is lost if the cron never fires.)
+
 ## Is there data? How much?
 
 ```bash

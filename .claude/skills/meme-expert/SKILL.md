@@ -179,7 +179,12 @@ Predicting graduation (62% precision) ≠ a profitable buy. Honest prior: negati
   `PAPER_FEE_PCT`(0.01) `PAPER_SLIP_PCT`(0.015) `PAPER_POSITION_SOL`(0.1).
 - **Gate:** only consider real funds if net P&L is *clearly & repeatably positive after costs.*
 
-**Live paper trial:** started 2026-06-25 ~10:27 UTC. Results PENDING (24h auto-analysis) — update here.
+**Live paper trial (2026-06-25, n=94, ~first hour):** net **−1.45 SOL** after costs, win rate **19%**,
+mean **−15%/trade** (median −31% = a full stop). Exits: stop_loss 45 (−36%), timeout 33 (−19%),
+take_profit 16 (+49%) — winners don't cover the stops. **Avg entry mcap 64.7 SOL (~2.3× the ~28
+launch) — confirms we buy *after* the move.** **Gate NOT cleared** (matches the negative-EV prior).
+Ledger = `data/paper_trades.jsonl` (append-only, survives restarts); summarize anytime via the
+meme-ops `paper-stats` command. Update this line as more trades accrue.
 
 **Two structural blockers to any real edge** (neither is a pattern tweak):
 1. **Latency** — 5–15 min snapshot lag, and even a 60s decision is too slow vs first-second
