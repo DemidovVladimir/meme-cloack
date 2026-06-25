@@ -29,4 +29,23 @@ pub enum Command {
         #[arg(long, default_value_t = 30)]
         limit: u32,
     },
+    /// Paper-trade the live high-conviction signal (SIMULATED — no real money, no keys).
+    /// Opens its own Helius stream; logs fee+slippage-adjusted P&L to a JSONL file.
+    Papertrade {
+        /// Decision age in seconds (when the entry is evaluated).
+        #[arg(long)]
+        entry_secs: Option<u64>,
+        /// Min distinct early buyers required to enter.
+        #[arg(long)]
+        min_buyers: Option<usize>,
+        /// Take-profit fraction (e.g. 0.5 = +50%).
+        #[arg(long)]
+        tp: Option<f64>,
+        /// Stop-loss fraction (e.g. 0.3 = -30%).
+        #[arg(long)]
+        sl: Option<f64>,
+        /// Max hold seconds before a timeout exit.
+        #[arg(long)]
+        hold_secs: Option<u64>,
+    },
 }

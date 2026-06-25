@@ -5,6 +5,7 @@ mod helius;
 mod ingest;
 mod mcp;
 mod model;
+mod paper;
 mod prune;
 mod pumpfun_decode;
 mod pumpportal;
@@ -40,6 +41,10 @@ async fn main() -> Result<()> {
         cli::Command::Screen { minutes, tier, limit } => {
             let p = screen::ScreenParams::from_args(Some(minutes), tier.as_deref(), Some(limit));
             screen::run(&config, p)?;
+        }
+        cli::Command::Papertrade { entry_secs, min_buyers, tp, sl, hold_secs } => {
+            let p = paper::PaperParams::resolve(entry_secs, min_buyers, tp, sl, hold_secs);
+            paper::run(config, p).await?;
         }
     }
     Ok(())
