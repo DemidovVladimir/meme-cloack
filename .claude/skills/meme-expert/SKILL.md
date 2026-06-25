@@ -152,6 +152,41 @@ CONFIDENCE: <low|medium|high> (as of <YYYY-MM-DD>)
 ACTION: <what a live screen should do when it matches>
 -->
 
+## Trading Notes (paper → live)
+
+Durable record of the trading experiment so we DON'T re-run the expensive paper trial
+every time. Update this section when new paper/live results land; read it before any trade.
+
+**Bottom line so far: the detection edge does NOT translate into trading profit.**
+Predicting graduation (62% precision) ≠ a profitable buy. Honest prior: negative EV.
+
+**Why the signal isn't tradeable** (2026-06-25 backtest, n=1,480 high-conviction):
+- Buying the signal at the 2-min mark: median *best-possible* exit (sell the post-entry
+  peak — unachievable) = **+16%**; **35%** go flat/down; only **15%** ever double → negative EV after costs.
+- The signal is **coincident with the move**: by 60–120s the token already ran to a median
+  ~54 SOL (~2× launch). You buy after the pump and become exit liquidity.
+- Memecoins are **negative-sum / adversarial**: profit accrues to devs, sub-second snipers/bots,
+  and insiders who *manufacture* the early breadth (that's the `serial_frac` cohort).
+
+**Cost model** (use for every sim / live sizing): ~1% pump.fun fee + ~1.5% slippage **per side**
+≈ 5% round-trip drag. Peak is censored at graduation (~411 SOL); post-Raydium price is invisible.
+
+**Harness — `meme-expert papertrade`** (re-run to test/adjust; don't guess):
+- Decoupled live screener + simulated P&L; its own Helius stream; no keys/execution.
+  Logs fee+slippage-adjusted trades to `data/paper_trades.jsonl`. systemd: `meme-expert-papertrade`.
+- Knobs (env `PAPER_*` / CLI): `--entry-secs`(60) `--min-buyers`(12) `PAPER_MIN_NET_SOL`(2)
+  `PAPER_MAX_TOP_SHARE`(0.5) `--tp`(0.5) `--sl`(0.3) `--hold-secs`(300) `PAPER_GRAD_MCAP`(400)
+  `PAPER_FEE_PCT`(0.01) `PAPER_SLIP_PCT`(0.015) `PAPER_POSITION_SOL`(0.1).
+- **Gate:** only consider real funds if net P&L is *clearly & repeatably positive after costs.*
+
+**Live paper trial:** started 2026-06-25 ~10:27 UTC. Results PENDING (24h auto-analysis) — update here.
+
+**Two structural blockers to any real edge** (neither is a pattern tweak):
+1. **Latency** — 5–15 min snapshot lag, and even a 60s decision is too slow vs first-second
+   snipers. Needs sub-second live alerting/execution.
+2. **Post-graduation blindness** — the big moves are on Raydium, which we don't ingest. Needs an AMM source.
+Until BOTH are solved, **do not trade real funds.**
+
 ## Research Log
 
 - **2026-06-25 — first full-firehose 24h run** (Helius, 2026-06-23 21:07 → 06-24 21:17
