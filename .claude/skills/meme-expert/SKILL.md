@@ -179,12 +179,17 @@ Predicting graduation (62% precision) ≠ a profitable buy. Honest prior: negati
   `PAPER_FEE_PCT`(0.01) `PAPER_SLIP_PCT`(0.015) `PAPER_POSITION_SOL`(0.1).
 - **Gate:** only consider real funds if net P&L is *clearly & repeatably positive after costs.*
 
-**Live paper trial (2026-06-25, n=94, ~first hour):** net **−1.45 SOL** after costs, win rate **19%**,
-mean **−15%/trade** (median −31% = a full stop). Exits: stop_loss 45 (−36%), timeout 33 (−19%),
-take_profit 16 (+49%) — winners don't cover the stops. **Avg entry mcap 64.7 SOL (~2.3× the ~28
-launch) — confirms we buy *after* the move.** **Gate NOT cleared** (matches the negative-EV prior).
-Ledger = `data/paper_trades.jsonl` (append-only, survives restarts); summarize anytime via the
-meme-ops `paper-stats` command. Update this line as more trades accrue.
+**Paper trial CONCLUDED 2026-06-26 — 24h, n=1,915, clean run (0 restarts). GATE NOT CLEARED.**
+Net **−18.69 SOL** after costs (0.1 SOL/position), win rate **28.9%**, mean **−9.8%/trade**
+(median −29% = a near-full stop). Exits: stop_loss 880/46% (−31.6 SOL), timeout 569/30%
+(−7.5 SOL), take_profit 443/23% (+20.4 SOL), graduation 23 (+0.04) — winners can't cover the
+stops. **Avg entry mcap 71.7 SOL (~2.6× the ~28 launch) — we buy AFTER the move, every time.**
+Loss was **stable across all three 8h thirds** (−6.5 / −4.5 / −7.6 SOL) → not a one-window fluke.
+**CONCLUSION: these heuristics are a graduation *detector*, not a profitable entry signal. Do NOT
+trade real funds on them as-is.** The structural blockers (sub-second latency + Raydium post-grad
+data) remain hard prerequisites. Service stopped 2026-06-26. To revisit, adjust the `papertrade`
+knobs and re-run — but expect the same unless the latency/Raydium problems are solved first.
+Ledger preserved at `data/paper_trades.jsonl`; re-summarize via meme-ops `paper-stats`.
 
 **Two structural blockers to any real edge** (neither is a pattern tweak):
 1. **Latency** — 5–15 min snapshot lag, and even a 60s decision is too slow vs first-second
