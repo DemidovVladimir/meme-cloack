@@ -103,7 +103,9 @@ SELECT c.symbol, c.mint,
 FROM cohort c
 LEFT JOIN sw ON sw.mint = c.mint
 LEFT JOIN act ON act.mint = c.mint
-WHERE COALESCE(sw.smart_buyers, 0) >= 1 OR COALESCE(act.buyers_10m, 0) >= {active_min}
+-- A buy candidate must be ALIVE (recent activity); dead coins are never surfaced,
+-- even if smart money bought them early. Smart backing ranks the live ones.
+WHERE COALESCE(act.buyers_10m, 0) >= {active_min} OR COALESCE(act.trades_10m, 0) >= {active_min} * 2
 ORDER BY COALESCE(sw.smart_buyers, 0) DESC, COALESCE(act.buyers_10m, 0) DESC
 LIMIT {limit}
 "#,
