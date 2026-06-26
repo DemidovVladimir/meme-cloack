@@ -229,10 +229,17 @@ vs 6%. Dead-quiet survivors (≤2 buyers/10 min, the median loser) stay dead. Ne
 CONFIDENCE: medium (2026-06-26, one 24h window; revalidate).
 ACTION: require ongoing activity; a flat survivor at launch mcap is a pass.
 
-**The screener (`survivors` CLI / `screen_survivors` MCP — to be built):** computes the smart-wallet
-set from the rolling 24h, takes the cohort of tokens **created 30–45 min ago**, and surfaces those
-whose **first-60s buyers include smart wallets** and/or that are **still actively traded**, ranked.
-Output per token: age, # smart early buyers, buyers/trades in last 10 min, current mcap.
+**The screener — `survivors` CLI / `screen_survivors` MCP (BUILT + deployed):** computes the
+smart-wallet set fresh from the rolling 24h — where **smart = SELECTIVE winners**: cap distinct coins
+traded ≤200 AND exclude the dev's own bundle-buy (`trader <> creator`); spray bots (one traded 8,012
+coins!) and devs were inflating the counts. Then it takes the cohort created **30–45 min ago** and
+surfaces **only those still ALIVE** (recent activity required — a dead coin is NEVER proposed, even
+if smart money bought it early), ranked by # smart early buyers. Output: age, smart_early_buyers,
+buyers/trades last 10 min, cur/peak mcap, last_trade_age_s.
+REALITY CHECK (J2Fg "50", 2026-06-26): even **4 selective smart wallets** bought a coin that pumped
+to ~$9.7k in 1 min then rugged by min 3 — the signal is **~35–40%, not a guarantee**. Data ingestion
+was CORRECT (it captured the pump and death accurately); the fixes were definitional (exclude
+bots/devs) + never surface dead coins.
 
 **Honest limits:** best candidates still only hit ~35% — a ~3× better gamble, NOT a sure thing.
 Needs live capture for a fresh wallet set. Multi-week wallet persistence still unproven. Research,
