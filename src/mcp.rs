@@ -72,6 +72,16 @@ pub struct ScreenArgs {
     pub limit: Option<u32>,
 }
 
+#[derive(Debug, Deserialize, JsonSchema)]
+pub struct SurvivorArgs {
+    /// Cohort lower age bound in minutes (default 30).
+    pub age_min: Option<u32>,
+    /// Cohort upper age bound in minutes (default 45).
+    pub age_max: Option<u32>,
+    /// Max rows (default 30).
+    pub limit: Option<u32>,
+}
+
 #[tool_router]
 impl MemeServer {
     pub fn new(pool: ReaderPool) -> Self {
@@ -203,6 +213,20 @@ impl MemeServer {
     async fn screen_candidates(&self, Parameters(a): Parameters<ScreenArgs>) -> Result<CallToolResult, McpError> {
         let p = crate::screen::ScreenParams::from_args(a.minutes, a.tier.as_deref(), a.limit);
         self.blocking_json(move |c| crate::screen::screen(c, &p)).await
+    }
+
+    #[tool(
+        description = "THE 40-minute buy-decision screener (see SKILL.md '40-Minute Survivor Screening'). \
+        For coins ~30-45 min old, answers 'is this a good buy now?'. Recomputes the smart-money wallet set \
+        (wallets that buy CHEAP at launch — ≤35 SOL, first 60s — and win, validated to transfer cross-day at \
+        ~2.4x base) from the rolling window, then surfaces cohort tokens whose first-60s buyers include those \
+        smart wallets and/or that are still actively traded (fresh buyers in the last 10 min, ~3x lift). \
+        Each row: age_min, smart_early_buyers, buyers_10m, trades_10m, cur_mcap, peak_mcap, last_trade_age_s, reasons. \
+        Args: age_min (default 30), age_max (default 45), limit (default 30). Rare by design — good survivors are ~4% of launches."
+    )]
+    async fn screen_survivors(&self, Parameters(a): Parameters<SurvivorArgs>) -> Result<CallToolResult, McpError> {
+        let p = crate::survivors::SurvivorParams::from_args(a.age_min, a.age_max, a.limit);
+        self.blocking_json(move |c| crate::survivors::screen(c, &p)).await
     }
 
     async fn blocking_json<F>(&self, f: F) -> Result<CallToolResult, McpError>

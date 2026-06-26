@@ -48,4 +48,17 @@ pub enum Command {
         #[arg(long)]
         hold_secs: Option<u64>,
     },
+    /// Screen ~30-45 min old "survivor" tokens as live BUY candidates: smart-money
+    /// early buyers + still-active. The 40-minute buy-decision tool (reads the snapshot).
+    Survivors {
+        /// Cohort lower age bound, minutes (default 30).
+        #[arg(long)]
+        age_min: Option<u32>,
+        /// Cohort upper age bound, minutes (default 45).
+        #[arg(long)]
+        age_max: Option<u32>,
+        /// Max rows (default 30).
+        #[arg(long)]
+        limit: Option<u32>,
+    },
 }

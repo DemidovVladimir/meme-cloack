@@ -11,6 +11,7 @@ mod pumpfun_decode;
 mod pumpportal;
 mod screen;
 mod stats;
+mod survivors;
 mod util;
 mod writer;
 
@@ -45,6 +46,10 @@ async fn main() -> Result<()> {
         cli::Command::Papertrade { entry_secs, min_buyers, tp, sl, hold_secs } => {
             let p = paper::PaperParams::resolve(entry_secs, min_buyers, tp, sl, hold_secs);
             paper::run(config, p).await?;
+        }
+        cli::Command::Survivors { age_min, age_max, limit } => {
+            let p = survivors::SurvivorParams::from_args(age_min, age_max, limit);
+            survivors::run(&config, p)?;
         }
     }
     Ok(())
