@@ -197,8 +197,59 @@ Ledger preserved at `data/paper_trades.jsonl`; re-summarize via meme-ops `paper-
 2. **Post-graduation blindness** — the big moves are on Raydium, which we don't ingest. Needs an AMM source.
 Until BOTH are solved, **do not trade real funds.**
 
+## 40-Minute Survivor Screening — the live buy-decision tool
+
+This is the **primary use case**: *"a coin is ~30–45 min old — is it a good buy NOW?"* (NOT the
+early-life graduation detector above; that one's signal is at 1–2 min and isn't tradeable.)
+
+**Base rate (2026-06-26, full 24h):** only ~**4%** of launches are still alive at 40 min, and of
+those, only **~12% rise ≥50%** afterward while **~44% only bleed** (median survivor sits at the ~28
+SOL launch, going nowhere). So **buying a *random* 40-min survivor is a bad bet** — the tool's job
+is to pick the ~12% that run. Two signals do that, both validated:
+
+HEURISTIC: Smart-money wallets (cheap-launch winners)
+SIGNAL: a wallet that BUYS CHEAP AT LAUNCH (first 60s AND market cap ≤ 35 SOL) and whose such buys
+graduate (peak ≥ 84) at a high rate over the rolling window. Threshold for the set: ≥10 cheap-launch
+buys, ≥35–40% success. If one of these bought a token early → it's a strong bullish marker.
+EVIDENCE: these wallets' cheap-launch picks succeed at ~**35–50% vs the ~12% base (≈2.4–4× lift)**.
+Validated 3 ways: split-half on two separate days (28.3% & 28.5% vs ~13% base), AND a clean
+cross-day test — day-1's 31 wallets, applied to day-2's 9,343 *brand-new* coins, hit **34.4% vs
+14.1% base**. The edge genuinely transfers forward. Reactive *chasers* (buy high, after a 3×) look
+even better on paper but are USELESS — vet that a wallet buys CHEAP, not just early.
+CONFIDENCE: medium-high (validated out-of-sample + cross-day, 2026-06-26).
+DECAY: the set rots fast — only ~20 of 31 wallets stayed active one day later. **Recompute the smart
+set continuously from the rolling 24h; never trust a stale list.** (This is why capture must run.)
+ACTION: a 30–45-min token whose first-60s buyers include current smart wallets = surface it.
+
+HEURISTIC: Still-active at 40 min (ongoing breadth)
+SIGNAL: in the last ~10 min, the token is still pulling **≥10–15 distinct fresh buyers and ≥20 trades**.
+EVIDENCE: survivors still active this way rise ≥50% at **~35% vs ~12% base (≈3× lift)**; ≥2× at ~20%
+vs 6%. Dead-quiet survivors (≤2 buyers/10 min, the median loser) stay dead. Net flow does NOT matter —
+*breadth/activity* does.
+CONFIDENCE: medium (2026-06-26, one 24h window; revalidate).
+ACTION: require ongoing activity; a flat survivor at launch mcap is a pass.
+
+**The screener (`survivors` CLI / `screen_survivors` MCP — to be built):** computes the smart-wallet
+set from the rolling 24h, takes the cohort of tokens **created 30–45 min ago**, and surfaces those
+whose **first-60s buyers include smart wallets** and/or that are **still actively traded**, ranked.
+Output per token: age, # smart early buyers, buyers/trades in last 10 min, current mcap.
+
+**Honest limits:** best candidates still only hit ~35% — a ~3× better gamble, NOT a sure thing.
+Needs live capture for a fresh wallet set. Multi-week wallet persistence still unproven. Research,
+not financial advice.
+
 ## Research Log
 
+- **2026-06-26 — 40-min survivor screening + smart-wallet mining.** Reframed to the real use case
+  (judge a ~40-min-old coin as a buy), since the early-life detector isn't tradeable (paper trial
+  lost −18.7 SOL / 1,915 trades, avg entry 71.7 SOL = bought after the move). Findings: (1) only
+  ~4% of launches survive to 40 min; of those ~12% rise ≥50%, ~44% only bleed. (2) **Smart-money
+  wallets** — wallets that buy cheap at launch (≤35 SOL, first 60s) and win — persist out-of-sample:
+  split-half on two days (28.3% & 28.5% vs ~13% base) AND a clean cross-day test (day-1's 31 wallets
+  → day-2's 9,343 *new* coins = 34.4% vs 14.1% base, ~2.4×). Set decays ~⅓/day → recompute live.
+  Reactive chasers (buy high after a 3×) look great but are useless — vet for CHEAP buys. (3)
+  **Still-active at 40 min** (≥10–15 fresh buyers / 10 min) → ~3× lift. Capture re-enabled to keep
+  the wallet set fresh; building the `survivors` / `screen_survivors` screener.
 - **2026-06-25 — first full-firehose 24h run** (Helius, 2026-06-23 21:07 → 06-24 21:17
   UTC). Dataset: **27,965 tokens · 1,894,214 trades · 98,897 distinct traders** — every
   pump.fun trade, no 500-sub cap (vs the frozen 100-min/1,318-labelable set). Findings:
