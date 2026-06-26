@@ -22,6 +22,8 @@ pub struct SurvivorParams {
     /// Smart-wallet set: min cheap-launch (≤35 SOL, first 60s) buys and min success %.
     pub smart_min_buys: u32,
     pub smart_min_succ: f64,
+    /// Selectivity cap — exclude spray bots that trade more than this many distinct tokens.
+    pub smart_max_tokens: u32,
     /// "Still active" threshold: distinct buyers in the last 10 min.
     pub active_min: u32,
     pub limit: u32,
@@ -35,7 +37,8 @@ impl SurvivorParams {
             age_min,
             age_max,
             smart_min_buys: 10,
-            smart_min_succ: 35.0,
+            smart_min_succ: 40.0,
+            smart_max_tokens: 200,
             active_min: 10,
             limit: limit.unwrap_or(30).clamp(1, 200),
         }
@@ -49,19 +52,25 @@ pub fn build_sql(p: &SurvivorParams) -> String {
         r#"
 WITH horizon AS (SELECT max(ts_ms) AS t FROM trades),
 tok_all AS (
-  SELECT n.mint, n.created_ms, max(tr.market_cap_sol) AS peak
+  SELECT n.mint, n.created_ms, n.creator, max(tr.market_cap_sol) AS peak
   FROM new_tokens n JOIN trades tr ON tr.mint = n.mint
-  GROUP BY n.mint, n.created_ms
+  GROUP BY n.mint, n.created_ms, n.creator
 ),
+-- total distinct coins each wallet traded — the spray-bot tell.
+vol AS (SELECT trader, count(DISTINCT mint) AS total_tokens FROM trades GROUP BY trader),
 clb AS (
   SELECT DISTINCT t.trader, t.mint, ta.peak
   FROM trades t JOIN tok_all ta ON ta.mint = t.mint
   WHERE t.side = 'buy' AND t.ts_ms <= ta.created_ms + 60000 AND t.market_cap_sol <= 35
+    AND t.trader <> ta.creator   -- exclude the dev's own bundle-buy
 ),
+-- "smart" = SELECTIVE winners: high cheap-launch hit rate AND not a spray bot.
 smart AS (
-  SELECT trader FROM clb GROUP BY trader
+  SELECT c.trader FROM clb c JOIN vol v ON v.trader = c.trader
+  GROUP BY c.trader, v.total_tokens
   HAVING count(*) >= {smart_min_buys}
-     AND 100.0 * count(*) FILTER (WHERE peak >= 84) / count(*) >= {smart_min_succ}
+     AND 100.0 * count(*) FILTER (WHERE c.peak >= 84) / count(*) >= {smart_min_succ}
+     AND v.total_tokens <= {smart_max_tokens}
 ),
 cohort AS (
   SELECT n.mint, n.symbol, n.created_ms FROM new_tokens n CROSS JOIN horizon
@@ -100,6 +109,7 @@ LIMIT {limit}
 "#,
         smart_min_buys = p.smart_min_buys,
         smart_min_succ = p.smart_min_succ,
+        smart_max_tokens = p.smart_max_tokens,
         age_max = p.age_max,
         age_min = p.age_min,
         active_min = p.active_min,
