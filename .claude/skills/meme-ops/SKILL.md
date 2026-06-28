@@ -19,7 +19,7 @@ plumbing.
 | IP | `178.104.2.95` |
 | SSH key | `~/.ssh/hetzner_meme_ed25519` |
 | Users | `root` (ops/full) · `meme` (service user: runs ingester, owns the data) |
-| Services | `meme-expert-papertrade` (active 2026-06-25+ — paper-trading, the current live Helius consumer) · `meme-expert-ingest` (stopped+disabled 2026-06-25; data capture — re-enable to resume) |
+| Services | `meme-expert-ingest` (**stopped+disabled 2026-06-28** by user after the re-validation run — data capture + the live Helius consumer; `systemctl enable --now meme-expert-ingest` to resume) · `meme-expert-papertrade` (stopped+disabled 2026-06-26 — paper trial concluded, GATE NOT CLEARED). NOTE: an earlier version of this table had these two inverted; corrected 2026-06-28. Both currently inactive ⇒ **zero Helius credit burn**; data frozen in `data/*.duckdb`. |
 | Binary | `/usr/local/bin/meme-expert` (subcommands: `ingest` `mcp` `stats` `prune` `screen` `papertrade`) |
 | Data dir | `/home/meme/meme-expert/data/` |
 | DBs | `hot.duckdb` (live, held read-write by ingester) · `snapshot.duckdb` (read-only, refreshed every snapshot interval) · `.wal` is the active write-ahead log |
